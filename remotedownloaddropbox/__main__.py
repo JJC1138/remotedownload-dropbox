@@ -26,12 +26,15 @@ def main():
         """A file-like object for uploading to a Dropbox upload session"""
 
         def __init__(self):
-            self._cursor = dropbox.files.UploadSessionCursor(dbx.files_upload_session_start(b'').session_id, 0)
+            self._cursor = None
 
         def write(self, data):
             # The Dropbox API will happily take a string but we need to know the length of its byte representation to advance the cursor so just convert it ourselves:
             data_bytes = data.encode('utf-8') if type(data) is str else data
-            dbx.files_upload_session_append_v2(data_bytes, self._cursor)
+            if self._cursor is None:
+                self._cursor = dropbox.files.UploadSessionCursor(dbx.files_upload_session_start(data_bytes).session_id, 0)
+            else:
+                dbx.files_upload_session_append_v2(data_bytes, self._cursor)
             self._cursor.offset += len(data_bytes)
 
         def commit(self, filename):
