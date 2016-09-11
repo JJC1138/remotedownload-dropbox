@@ -39,6 +39,8 @@ def main():
                 dropbox.files.CommitInfo('/%s' % filename, dropbox.files.WriteMode.add, autorename=True))
 
     for url in downloader.urls:
+        print("Starting: %s" % url)
         upload = DropboxFileUpload()
-        filename = downloader.get(url, upload, chunk_size=2 ** 20)
+        filename = downloader.get(url, upload, chunk_size=2 ** 20, progress_reporter=remotedownload.ProgressReporter())
         upload.commit(filename)
+        print("Finished saving: %s" % filename)
