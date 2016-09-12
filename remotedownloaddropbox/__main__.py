@@ -55,18 +55,28 @@ def main():
         def __init__(self):
             self.start_time = time.time()
             self._doing = 0
+            self._download_progress = 0
+            self._download_kbytesps = 0
+            self._upload_progress = 0
+            self._upload_kbytesps = 0
 
         def download_progress(self, done, doing):
             self._doing = doing
-            self.progress("Download", done, doing)
+            (self._download_progress, self._download_kbytesps) = self.progress(done, doing)
+            self.print_both_bars()
 
         def upload_progress(self, done):
-            self.progress("Upload", done, self._doing)
+            (self._upload_progress, self._upload_kbytesps) = self.progress(done, self._doing)
+            self.print_both_bars()
 
-        def progress(self, prefix, done, doing):
+        def progress(self, done, doing):
             progress = float(done) / doing if doing != 0 else 1
             kbytesps = (done / (time.time() - self.start_time)) / 1024
-            self.print_bar(prefix, progress, kbytesps)
+            return (progress, kbytesps)
+
+        def print_both_bars(self):
+            self.print_bar("Download", self._download_progress, self._download_kbytesps)
+            self.print_bar("Upload", self._upload_progress, self._upload_kbytesps)
 
         def print_bar(self, prefix, progress, kbytesps):
             prefix_width = 9
