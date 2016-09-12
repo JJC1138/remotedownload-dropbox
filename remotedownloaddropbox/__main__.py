@@ -81,16 +81,12 @@ def main():
             self.print_bar("Upload", self._upload_progress, self._upload_kbytesps)
 
         def print_bar(self, prefix, progress, kbytesps):
-            prefix_width = 9
-            prefix_characters = len(prefix)
-            prefix_spaces = prefix_width - prefix_characters
-
             bar_width = 50
             bars = int(progress * bar_width)
             spaces = bar_width - bars
 
             print(\
-                prefix + (' ' * prefix_spaces) + \
+                ('%-9s' % prefix) + \
                 '[' + ('#' * bars) + (' ' * spaces) + ']' + \
                 (' %d kB/s' % kbytesps))
 
