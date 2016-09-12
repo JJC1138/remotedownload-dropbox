@@ -44,6 +44,6 @@ def main():
     for url in downloader.urls:
         print("Starting: %s" % url)
         upload = DropboxFileUpload()
-        filename = downloader.get(url, upload, chunk_size=4 * (2 ** 20), progress_reporter=remotedownload.ProgressReporter())
+        filename = downloader.get(url, upload, chunk_size=16 * (2 ** 20), progress_reporter=remotedownload.ProgressReporter())
         upload.commit(filename)
         print("Finished saving: %s" % filename)
