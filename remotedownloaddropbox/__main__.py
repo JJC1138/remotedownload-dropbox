@@ -50,25 +50,62 @@ def main():
             self._file.write(data)
             self._file.flush()
 
+    class DualProgressReporter:
+
+        def __init__(self):
+            self.start_time = time.time()
+            self._doing = 0
+
+        def download_progress(self, done, doing):
+            self._doing = doing
+            self.progress("Download", done, doing)
+
+        def upload_progress(self, done):
+            self.progress("Upload", done, self._doing)
+
+        def progress(self, prefix, done, doing):
+            progress = float(done) / doing if doing != 0 else 1
+            kbytesps = (done / (time.time() - self.start_time)) / 1024
+            self.print_bar(prefix, progress, kbytesps)
+
+        def print_bar(self, prefix, progress, kbytesps):
+            prefix_width = 9
+            prefix_characters = len(prefix)
+            prefix_spaces = prefix_width - prefix_characters
+
+            bar_width = 50
+            bars = int(progress * bar_width)
+            spaces = bar_width - bars
+
+            print(\
+                prefix + (' ' * prefix_spaces) + \
+                '[' + ('#' * bars) + (' ' * spaces) + ']' + \
+                (' %d kB/s' % kbytesps))
+
     for url in downloader.urls:
         print("Starting: %s" % url)
         upload = DropboxFileUpload()
         with tempfile.NamedTemporaryFile('wb') as write_file:
             with open(write_file.name, 'rb') as read_file:
+                progress_reporter = DualProgressReporter()
                 completed_download = False
                 filename = downloader.get(url,
                     AutoFlushingFileWrapper(write_file),
-                    progress_reporter=remotedownload.ProgressReporter())
+                    progress_reporter=progress_reporter.download_progress)
                 completed_download = True
                 max_upload_chunk_size = 16 * (2 ** 20)
+                total_uploaded = 0
                 while True:
                     upload_chunk = read_file.read(max_upload_chunk_size)
-                    if len(upload_chunk) == 0:
+                    upload_chunk_length = len(upload_chunk)
+                    if upload_chunk_length == 0:
                         if completed_download:
                             break
                         else:
                             time.sleep(1) # wait for more data
                             continue
                     upload.write(upload_chunk)
+                    total_uploaded += upload_chunk_length
+                    progress_reporter.upload_progress(total_uploaded)
                 upload.commit(filename)
         print("Finished saving: %s" % filename)
