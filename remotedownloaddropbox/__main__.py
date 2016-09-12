@@ -59,6 +59,7 @@ def main():
             self._download_kbytesps = 0
             self._upload_progress = 0
             self._upload_kbytesps = 0
+            print('\n' * 2, end='')
 
         def download_progress(self, done, doing):
             self._doing = doing
@@ -75,6 +76,7 @@ def main():
             return (progress, kbytesps)
 
         def print_both_bars(self):
+            print('\033[F' * 2, end='')
             self.print_bar("Download", self._download_progress, self._download_kbytesps)
             self.print_bar("Upload", self._upload_progress, self._upload_kbytesps)
 
