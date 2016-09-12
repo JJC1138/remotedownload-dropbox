@@ -3,6 +3,8 @@
 import configparser
 import os
 import sys
+import tempfile
+import time
 
 import dropbox
 
@@ -41,9 +43,32 @@ def main():
             dbx.files_upload_session_finish(b'', self._cursor,
                 dropbox.files.CommitInfo('/%s' % filename, dropbox.files.WriteMode.add, autorename=True))
 
+    class AutoFlushingFileWrapper:
+        def __init__(self, file):
+            self._file = file
+        def write(self, data):
+            self._file.write(data)
+            self._file.flush()
+
     for url in downloader.urls:
         print("Starting: %s" % url)
         upload = DropboxFileUpload()
-        filename = downloader.get(url, upload, chunk_size=16 * (2 ** 20), progress_reporter=remotedownload.ProgressReporter())
-        upload.commit(filename)
+        with tempfile.NamedTemporaryFile('wb') as write_file:
+            with open(write_file.name, 'rb') as read_file:
+                completed_download = False
+                filename = downloader.get(url,
+                    AutoFlushingFileWrapper(write_file),
+                    progress_reporter=remotedownload.ProgressReporter())
+                completed_download = True
+                max_upload_chunk_size = 16 * (2 ** 20)
+                while True:
+                    upload_chunk = read_file.read(max_upload_chunk_size)
+                    if len(upload_chunk) == 0:
+                        if completed_download:
+                            break
+                        else:
+                            time.sleep(1) # wait for more data
+                            continue
+                    upload.write(upload_chunk)
+                upload.commit(filename)
         print("Finished saving: %s" % filename)
