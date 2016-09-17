@@ -40,9 +40,10 @@ def main():
                 dbx.files_upload_session_append_v2(data_bytes, self._cursor)
             self._cursor.offset += len(data_bytes)
 
-        def commit(self, filename):
+        def commit(self, filename, modification_time):
             dbx.files_upload_session_finish(b'', self._cursor,
-                dropbox.files.CommitInfo('/%s' % filename, dropbox.files.WriteMode.add, autorename=True))
+                dropbox.files.CommitInfo('/%s' % filename, dropbox.files.WriteMode.add,
+                    autorename=True, client_modified=modification_time))
 
     class AutoFlushingFileWrapper:
         def __init__(self, file):
@@ -101,10 +102,11 @@ def main():
             with open(write_file.name, 'rb') as read_file:
                 progress_reporter = DualProgressReporter()
                 filename = None
+                last_modified = None
                 completed_download = False
                 def download():
-                    nonlocal filename, completed_download
-                    filename = downloader.get(url,
+                    nonlocal filename, last_modified, completed_download
+                    (filename, last_modified) = downloader.get(url,
                         AutoFlushingFileWrapper(write_file),
                         progress_reporter=progress_reporter.download_progress)
                     completed_download = True
@@ -124,5 +126,5 @@ def main():
                     upload.write(upload_chunk)
                     total_uploaded += upload_chunk_length
                     progress_reporter.upload_progress(total_uploaded)
-                upload.commit(filename)
+                upload.commit(filename, last_modified)
         print("Finished saving: %s" % filename)
